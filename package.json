@@ -1,0 +1,30 @@
+{
+  "name": "matchday-arena-3d",
+  "version": "1.0.0",
+  "description": "3D Stadium Seat Picker & Matchday Arena Showcase with Production Secure Backend",
+  "main": "server/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node server/index.js",
+    "test": "node tests/security-test.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "helmet": "^8.0.0",
+    "cors": "^2.8.5",
+    "express-rate-limit": "^7.5.0",
+    "three": "^0.170.0"
+  },
+  "keywords": [
+    "threejs",
+    "3d-stadium",
+    "seat-picker",
+    "webgl",
+    "security",
+    "fullstack"
+  ],
+  "author": "Fullstack Engineering Team",
+  "license": "MIT"
+}
+

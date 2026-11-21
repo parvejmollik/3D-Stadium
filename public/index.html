@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Matchday Arena — 3D Stadium Seat Picker</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏟️</text></svg>">
+</head>
+<body>
+
+  <!-- 3D Canvas Viewport (Realtime WebGL) -->
+  <canvas id="webgl-viewport" style="display: none;"></canvas>
+
+  <!-- Photoreal Stage Viewport (Powered by Laptop & Mobile Showcase Assets) -->
+  <main id="photoreal-stage-viewport" class="stage-viewport laptop-mode">
+    <div class="stage-chassis" id="stage-chassis">
+      <img id="stage-visual-img" class="stage-img" src="/screenshots/laptop/01-aerial.jpg" alt="Matchday Arena Experience">
+      
+      <!-- Interactive Hotspots Layer -->
+      <div id="stage-hotspots-layer" class="hotspots-layer"></div>
+    </div>
+  </main>
+
+  <!-- Preloader (Prompt 5) -->
+  <div id="preloader">
+    <div class="loader-ball-container">
+      <div class="loader-ball"></div>
+      <div class="loader-shadow"></div>
+    </div>
+    <h1 class="loader-title">Matchday Arena 3D</h1>
+    <p class="loader-subtitle">Preparing 50,000 Seats & Grandstand Architecture...</p>
+    <div class="loader-progress-bar">
+      <div class="loader-progress-fill"></div>
+    </div>
+  </div>
+
+  <!-- Top Navigation & Match Info Bar -->
+  <header id="top-bar">
+    <div class="brand-section">
+      <div class="brand-badge">
+        <span class="live-indicator"></span>
+        <span class="brand-title">Final 2026</span>
+      </div>
+      <div class="match-info-pill">
+        <span class="match-team">Apex FC</span>
+        <span class="match-score">2 - 1</span>
+        <span class="match-team">Titan Rovers</span>
+        <span style="opacity: 0.5;">•</span>
+        <span>78' LIVE</span>
+      </div>
+    </div>
+
+    <!-- Breadcrumb Navigation -->
+    <nav class="breadcrumbs-bar" id="breadcrumbs-bar">
+      <span class="crumb-item active">Arena Orbit</span>
+    </nav>
+
+    <!-- Controls & Actions -->
+    <div class="nav-actions">
+      <!-- Device Selector (Laptop vs Mobile) -->
+      <div class="device-pill-selector">
+        <button id="btn-device-laptop" class="device-selector-btn active" title="Switch to Laptop View">💻 Laptop</button>
+        <button id="btn-device-mobile" class="device-selector-btn" title="Switch to Mobile View">📱 Phone</button>
+      </div>
+
+      <!-- Mode Toggle (HD Flow vs 3D Engine) -->
+      <button class="pill-btn mode-toggle-btn" id="btn-toggle-engine" title="Switch between Photoreal Flow and 3D WebGL Engine">
+        <span id="engine-mode-icon">🎮</span> <span id="engine-mode-text">3D WebGL</span>
+      </button>
+
+      <button class="icon-btn" id="sound-toggle-btn" title="Sound: OFF">🔇</button>
+      <button class="icon-btn" id="refresh-btn" title="Refresh Experience">🔄</button>
+      <button class="pill-btn" id="wallet-btn">
+        <span>🎟️ My Tickets</span>
+        <span class="badge-counter" id="wallet-badge" style="display: none;">0</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Flow Stage Stepper Navigator -->
+  <nav class="flow-stage-stepper" id="flow-stage-stepper">
+    <button class="stepper-btn active" data-step="1">
+      <span class="step-num">01</span>
+      <span class="step-name">Aerial View</span>
+    </button>
+    <button class="stepper-btn" data-step="2">
+      <span class="step-num">02</span>
+      <span class="step-name">Stand</span>
+    </button>
+    <button class="stepper-btn" data-step="3">
+      <span class="step-num">03</span>
+      <span class="step-name">Block</span>
+    </button>
+    <button class="stepper-btn" data-step="4">
+      <span class="step-num">04</span>
+      <span class="step-name">Seat Chosen</span>
+    </button>
+    <button class="stepper-btn" data-step="5">
+      <span class="step-num">05</span>
+      <span class="step-name">Your View</span>
+    </button>
+  </nav>
+
+  <!-- 3D Floating Interactive Tooltips / Chips -->
+  <div id="stand-tooltip"></div>
+  <div id="block-tooltip"></div>
+
+  <!-- Slide-Up Ticket Drawer Card (Step 4) -->
+  <div id="ticket-drawer">
+    <div class="drawer-header">
+      <div class="drawer-seat-info">
+        <h2 class="drawer-title" id="drawer-stand-name">East Stand</h2>
+        <p class="drawer-sub" id="drawer-seat-loc">Block 104 • Row 12 • Seat 14</p>
+      </div>
+      <button class="drawer-close-btn" id="drawer-close-btn">&times;</button>
+    </div>
+
+    <div class="drawer-content">
+      <!-- Live Rendered "Your View" Picture -->
+      <div class="live-view-box">
+        <canvas id="seat-preview-canvas" width="360" height="240"></canvas>
+        <img id="seat-hd-preview-img" style="display:none; width:100%; height:100%; object-fit:cover;" alt="HD Seat View">
+        <div class="live-badge">
+          <span>🔴 LIVE SIGHTLINE</span>
+          <button id="btn-toggle-hd-preview" style="background:rgba(255,255,255,0.25); border:none; color:#fff; border-radius:4px; padding:1px 6px; font-size:0.62rem; cursor:pointer; margin-left:6px;">HD Photo</button>
+        </div>
+        <div class="live-view-label" id="preview-mode-label">3D Engine</div>
+      </div>
+
+      <div class="seat-details-grid">
+        <div class="detail-item">
+          <div class="detail-label">Tier / Level</div>
+          <div class="detail-val" id="drawer-val-tier">Lower Tier</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Gate Entrance</div>
+          <div class="detail-val" id="drawer-val-gate">Gate B2</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Row & Seat</div>
+          <div class="detail-val" id="drawer-val-row">Row 12</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Price</div>
+          <div class="detail-val" style="color: var(--accent-emerald);" id="drawer-val-price">€85</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="drawer-actions">
+      <button class="btn-secondary btn-upgrade" id="btn-upgrade-skybox">
+        <span>⭐ VIP Skybox (+€205)</span>
+      </button>
+      <button class="btn-secondary" id="btn-view-pov">
+        <span>👀 View From Seat (360°)</span>
+      </button>
+      <button class="btn-primary" id="btn-book-ticket">
+        <span>Book Ticket ➔</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- First-Person Eye Level POV HUD (Step 6) -->
+  <div id="seat-pov-hud">
+    <div class="pov-indicator-badge">
+      <span>👀 FIRST-PERSON SEAT SIGHTLINE: <strong id="pov-seat-label">East Stand • Block 104</strong></span>
+    </div>
+    <div class="pov-controls-hint">
+      🖱️ Click & Drag to look around 360° the pitch, roof, and grandstands
+    </div>
+    <div class="pov-bottom-actions">
+      <button class="btn-secondary" id="btn-toggle-hd-pov">
+        <span>📸 Toggle HD Photo Sightline</span>
+      </button>
+      <button class="btn-secondary" id="btn-pov-exit">
+        <span>⬅ Choose Another Seat</span>
+      </button>
+      <button class="btn-primary" id="btn-pov-confirm">
+        <span>Confirm This Seat ➔</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- HD Sightline Fullscreen Backdrop for POV Mode -->
+  <div id="pov-hd-backdrop" style="position:fixed; inset:0; z-index:35; display:none; background:#000;">
+    <img id="pov-hd-backdrop-img" src="/screenshots/laptop/05-view-from-seat.jpg" style="width:100%; height:100%; object-fit:cover;" alt="HD Sightline Backdrop">
+  </div>
+
+  <!-- Visual Showcase & Device Views Modal -->
+  <div class="modal-backdrop" id="showcase-modal">
+    <div class="modal-card" style="max-width: 960px; width: 95vw; max-height: 92vh; display: flex; flex-direction: column;">
+      <div class="modal-header">
+        <div class="modal-title">
+          <span>🏟️ Matchday Arena — Visual Showcase & Device Previews</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <div class="device-switch-group">
+            <button class="device-tab-btn active" id="tab-dev-laptop">💻 Laptop View</button>
+            <button class="device-tab-btn" id="tab-dev-mobile">📱 Phone View</button>
+          </div>
+          <button class="drawer-close-btn" id="showcase-close-btn">&times;</button>
+        </div>
+      </div>
+
+      <div class="modal-body" style="padding: 16px 24px; overflow-y: auto; flex: 1;">
+        <!-- Stage Step Navigation -->
+        <div class="showcase-steps-strip">
+          <button class="showcase-step-btn active" data-step="01">
+            <span class="step-num">01</span>
+            <span class="step-label">Aerial Orbit</span>
+          </button>
+          <button class="showcase-step-btn" data-step="02">
+            <span class="step-num">02</span>
+            <span class="step-label">Stand View</span>
+          </button>
+          <button class="showcase-step-btn" data-step="03">
+            <span class="step-num">03</span>
+            <span class="step-label">Block Close-Up</span>
+          </button>
+          <button class="showcase-step-btn" data-step="04">
+            <span class="step-num">04</span>
+            <span class="step-label">Seat & Ticket</span>
+          </button>
+          <button class="showcase-step-btn" data-step="05">
+            <span class="step-num">05</span>
+            <span class="step-label">View From Seat</span>
+          </button>
+        </div>
+
+        <!-- Image Frame Container -->
+        <div class="showcase-display-area">
+          <div class="showcase-frame laptop-frame" id="showcase-frame">
+            <img id="showcase-main-img" src="/screenshots/laptop/01-aerial.jpg" alt="Showcase Stage">
+            <div class="showcase-stage-caption" id="showcase-caption">
+              <strong>Step 01 — Aerial View:</strong> An orbital flyover over the arena and its park. Hovering or tapping a stand highlights it and shows an availability chip.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Checkout & Attendee Modal -->
+  <div class="modal-backdrop" id="checkout-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title">
+          <span>🔒 Secure Matchday Checkout</span>
+        </div>
+        <button class="drawer-close-btn" id="checkout-close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 16px;">
+          Reserving: <strong style="color: #fff;" id="checkout-seat-summary">East Stand • Block 104 • Row 12, Seat 14</strong>
+        </p>
+
+        <form id="checkout-form">
+          <div class="form-group">
+            <label class="form-label" for="customer-name">Full Name (Ticket Holder)</label>
+            <input type="text" id="customer-name" class="form-input" placeholder="e.g. Marcus Sterling" required minlength="2">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="customer-email">Email Address (For Digital Pass)</label>
+            <input type="email" id="customer-email" class="form-input" placeholder="e.g. marcus@matchday.com" required>
+          </div>
+
+          <div style="display:flex; justify-content:space-between; align-items:center; padding: 14px 0; border-top: 1px solid var(--glass-border); margin-top: 18px;">
+            <span style="font-size: 0.9rem; color: var(--text-secondary);">Total Amount</span>
+            <span style="font-size: 1.4rem; font-weight: 800; color: var(--accent-emerald);" id="checkout-total-price">€85</span>
+          </div>
+
+          <div class="security-badge-strip">
+            <span>🛡️</span>
+            <span>Tamper-proof HMAC-SHA256 signature generated upon checkout.</span>
+          </div>
+
+          <button type="submit" class="btn-primary" id="btn-submit-order" style="width: 100%; margin-top: 18px;">
+            Confirm & Pay Securely
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cryptographic Digital Pass Modal (Step 7) -->
+  <div class="modal-backdrop" id="ticket-modal">
+    <div class="modal-card" style="max-width: 440px;">
+      <div class="modal-header">
+        <div class="modal-title">
+          <span>🎟️ Official Digital Match Pass</span>
+        </div>
+        <button class="drawer-close-btn" id="ticket-modal-close-btn">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="digital-ticket-container">
+          <div class="ticket-header-banner">
+            <div>
+              <div class="ticket-match-title">Apex FC vs Titan Rovers</div>
+              <div style="font-size: 0.72rem; color: var(--text-secondary); margin-top: 2px;">Champions Cup Final 2026</div>
+            </div>
+            <div class="ticket-date-pill">Nov 28 • 20:00</div>
+          </div>
+
+          <div class="ticket-grid-details">
+            <div class="detail-item">
+              <div class="detail-label">Stand</div>
+              <div class="detail-val" id="pass-stand">East Stand</div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">Gate</div>
+              <div class="detail-val" id="pass-gate">Gate B2</div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">Block</div>
+              <div class="detail-val" id="pass-block">E104</div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">Row</div>
+              <div class="detail-val" id="pass-row">12</div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">Seat</div>
+              <div class="detail-val" id="pass-seat">14</div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">Price</div>
+              <div class="detail-val" style="color: var(--accent-emerald);" id="pass-price">€85</div>
+            </div>
+          </div>
+
+          <div class="ticket-qr-section">
+            <canvas id="ticket-qr-canvas" class="qr-code-canvas" width="140" height="140"></canvas>
+            <div class="ticket-serial" id="pass-serial">MDA-2026-9C4F</div>
+            <div style="font-size: 0.65rem; color: #64748b; margin-top: 4px;" id="pass-ticket-id">TKT-82F0394</div>
+          </div>
+
+          <div class="detail-label" style="text-align: center;">Ticket Holder: <strong id="pass-attendee" style="color:#fff;">Marcus Sterling</strong></div>
+
+          <!-- Turnstile Gate Verification Simulation -->
+          <div id="turnstile-status-box" class="turnstile-verify-box">
+            Scan ticket at turnstile scanner to simulate stadium admission.
+          </div>
+
+          <button class="btn-secondary" id="btn-verify-turnstile" style="width: 100%; margin-top: 12px;">
+            <span>Simulate Gate Admission Scan</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- "My Tickets" Slide-Out Wallet Drawer -->
+  <aside id="wallet-drawer">
+    <div class="wallet-header">
+      <h3 style="font-size: 1.1rem; font-weight: 800;">My Match Passes</h3>
+      <button class="drawer-close-btn" id="wallet-close-btn">&times;</button>
+    </div>
+    <div class="wallet-list" id="wallet-list">
+      <!-- Dynamically filled -->
+    </div>
+  </aside>
+
+  <!-- Main ES Module Entry Point -->
+  <script type="module" src="/js/main.js"></script>
+</body>
+</html>
+
